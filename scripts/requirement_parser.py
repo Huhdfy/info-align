@@ -22,7 +22,7 @@ from typing import Optional
 # Sentence splitting
 # ────────────────────────────────────────────────────────────
 
-_SENTENCE_RE = re.compile(r'[。！？\n]+')
+_SENTENCE_RE = re.compile(r'[。！？；\n，,]+')
 
 
 def _split_sentences(text: str) -> list[str]:
@@ -212,6 +212,7 @@ def main() -> None:
         description="Info Align Phase 2 — Semantic Pattern Parser"
     )
     ap.add_argument("--file", "-f", type=str, help="Input text file (UTF-8)")
+    ap.add_argument("--output", "-o", type=str, help="Output JSON file (UTF-8, defaults to stdout)")
     ap.add_argument("--pretty", "-p", action="store_true", help="Pretty-print JSON")
     args = ap.parse_args()
 
@@ -226,8 +227,12 @@ def main() -> None:
     results = extract_fields(text)
     indent = 2 if args.pretty else None
     output = json.dumps(results, ensure_ascii=False, indent=indent)
-    # Write as UTF-8 bytes to avoid console codec issues on Windows
-    sys.stdout.buffer.write(output.encode("utf-8") + b"\n")
+
+    if args.output:
+        with open(args.output, "w", encoding="utf-8") as fh:
+            fh.write(output + "\n")
+    else:
+        sys.stdout.buffer.write(output.encode("utf-8") + b"\n")
 
 
 if __name__ == "__main__":
