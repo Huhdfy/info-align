@@ -39,17 +39,9 @@ Task Context 来源（仅 User Request 必须存在）：
 
 将所有 source 原文拼接为完整文本。不做任何过滤、不改写、不推理。
 
-### 阶段 2：Requirement Extraction — 语义模式提取（委托 Python Parser）
+### 阶段 2：Requirement Extraction — 语义模式提取
 
-语义模式匹配是正则/规则引擎的工作，不由 LLM 直接推理。Agent 将 Task Context 传入 `scripts/requirement_parser.py`，获取结构化字段列表。
-
-```bash
-echo "<Task Context>" | python scripts/requirement_parser.py
-# 或
-python scripts/requirement_parser.py -f task_context.txt
-```
-
-Parser 内部规则（与旧版语义一致，交由代码执行）：
+对 Task Context 应用 6 类语义模式规则，**只提取显式信息，不判断缺什么**。
 
 | Pattern | 提取对象 | 输出 |
 |---------|---------|------|
@@ -60,14 +52,12 @@ Parser 内部规则（与旧版语义一致，交由代码执行）：
 | 输出、生成、返回、产出、格式为 | Output Format | `output: <descriptor>` |
 | 优先、首先、最后、先…再 | Execution Policy | `priority/order` |
 
-Parser 原则（已在 `scripts/requirement_parser.py` 中实现）：
+Parser 原则：
 - 只关心语义模式，不关心领域
 - 仅提取显式信息
 - 同一句子多模式命中时，按 Required > Default > Optional > Constraint 优先级消歧
 - 未命中任何模式的文本丢弃
-- "需要/必须"的宾语/主语是"你/AI"时，不作为 Required Field
-
-Parser 输出为 JSON 数组，每个元素含 `pattern`、`key`、`value`、`source: "parser"`、`sentence` 等字段。若 Task Context 中无任何语义关键词命中，返回 `[]`——正常，进入阶段 2.5。
+- "需要/必须"的宾语是"你/AI"时，不作为 Required Field
 
 ### 阶段 2.5：四象限发问 — 主动兜底
 
